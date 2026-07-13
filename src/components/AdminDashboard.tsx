@@ -201,20 +201,22 @@ export function AdminDashboard() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openCreateForm}
-            className="h-11 rounded-md bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
-          >
-            + Agregar Producto
-          </button>
-          <button
-            type="button"
-            onClick={signOut}
-            className="h-11 rounded-md border border-neutral-300 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
-          >
-            Salir
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="h-11 rounded-md bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
+            >
+              + Agregar Producto
+            </button>
+            <button
+              type="button"
+              onClick={signOut}
+              className="h-11 rounded-md border border-neutral-300 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
+            >
+              Salir
+            </button>
+          </div>
         </header>
 
         {errorMessage ? (

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { CartDrawer } from "@/components/CartDrawer";
 import { ProductCard } from "@/components/ProductCard";
+import { SiteNavbar } from "@/components/SiteNavbar";
 import { CartProvider } from "@/context/CartContext";
 import { fetchProducts } from "@/lib/productsApi";
 import type { Product } from "@/types/product";
 
-const STORE_WHATSAPP_PHONE = "5491112345678";
+const STORE_WHATSAPP_PHONE = process.env.NEXT_PUBLIC_PHONE ?? "";
 
 export function CatalogExample() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,6 +38,7 @@ export function CatalogExample() {
 
   return (
     <CartProvider>
+      <SiteNavbar />
       <main className="min-h-dvh bg-[var(--catalog-bg)] px-4 py-5 text-[var(--catalog-text)]">
         <section className="mx-auto max-w-5xl">
           <div className="mb-5">
