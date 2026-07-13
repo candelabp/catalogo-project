@@ -1,9 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { ProductForm } from "@/components/ProductForm";
-import { products as mockProducts } from "@/data/products";
+import {
+  createProduct,
+  deleteProductById,
+  fetchProducts,
+  updateProduct,
+  updateProductStock,
+  type ProductSaveInput,
+} from "@/lib/productsApi";
+import { supabase } from "@/lib/supabaseClient";
 import type { Product } from "@/types/product";
 
 const currencyFormatter = new Intl.NumberFormat("es-AR", {
@@ -21,9 +30,47 @@ const defaultCategories = [
 ];
 
 export function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        if (!supabase) {
+          throw new Error(
+            "Supabase no esta configurado. Revisa las variables de entorno.",
+          );
+        }
+
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          router.replace("/admin/login");
+          return;
+        }
+
+        const supabaseProducts = await fetchProducts();
+        setProducts(supabaseProducts);
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los productos.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProducts();
+  }, [router]);
 
   const categories = useMemo(() => {
     return Array.from(
@@ -46,44 +93,96 @@ export function AdminDashboard() {
     setIsFormOpen(false);
   }
 
-  function handleSaveProduct(productToSave: Product) {
-    setProducts((currentProducts) => {
-      const exists = currentProducts.some(
-        (product) => product.id === productToSave.id,
+  async function handleSaveProduct(productToSave: ProductSaveInput) {
+    try {
+      setIsSaving(true);
+      setErrorMessage("");
+
+      const savedProduct = editingProduct
+        ? await updateProduct(editingProduct.id, productToSave)
+        : await createProduct(productToSave);
+
+      setProducts((currentProducts) => {
+        if (editingProduct) {
+          return currentProducts.map((product) =>
+            product.id === savedProduct.id ? savedProduct : product,
+          );
+        }
+
+        return [savedProduct, ...currentProducts];
+      });
+
+      closeForm();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el producto.",
       );
-
-      if (exists) {
-        return currentProducts.map((product) =>
-          product.id === productToSave.id ? productToSave : product,
-        );
-      }
-
-      return [productToSave, ...currentProducts];
-    });
-
-    closeForm();
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function toggleStock(productId: string) {
+  async function toggleStock(productId: string) {
+    const productToUpdate = products.find((product) => product.id === productId);
+    if (!productToUpdate) return;
+
+    const nextStockValue = !productToUpdate.inStock;
+
     setProducts((currentProducts) =>
       currentProducts.map((product) =>
         product.id === productId
-          ? { ...product, inStock: !product.inStock }
+          ? { ...product, inStock: nextStockValue }
           : product,
       ),
     );
+
+    try {
+      setErrorMessage("");
+      const updatedProduct = await updateProductStock(productId, nextStockValue);
+      setProducts((currentProducts) =>
+        currentProducts.map((product) =>
+          product.id === productId ? updatedProduct : product,
+        ),
+      );
+    } catch (error) {
+      setProducts((currentProducts) =>
+        currentProducts.map((product) =>
+          product.id === productId ? productToUpdate : product,
+        ),
+      );
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo actualizar stock.",
+      );
+    }
   }
 
-  function deleteProduct(productId: string) {
+  async function deleteProduct(productId: string) {
     const shouldDelete = window.confirm(
       "Seguro que queres eliminar este producto?",
     );
 
     if (!shouldDelete) return;
 
-    setProducts((currentProducts) =>
-      currentProducts.filter((product) => product.id !== productId),
-    );
+    try {
+      setErrorMessage("");
+      await deleteProductById(productId);
+      setProducts((currentProducts) =>
+        currentProducts.filter((product) => product.id !== productId),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el producto.",
+      );
+    }
+  }
+
+  async function signOut() {
+    await supabase?.auth.signOut();
+    window.location.href = "/admin/login";
   }
 
   return (
@@ -109,7 +208,20 @@ export function AdminDashboard() {
           >
             + Agregar Producto
           </button>
+          <button
+            type="button"
+            onClick={signOut}
+            className="h-11 rounded-md border border-neutral-300 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
+          >
+            Salir
+          </button>
         </header>
+
+        {errorMessage ? (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {errorMessage}
+          </div>
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[1fr_420px]">
           <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
@@ -123,6 +235,23 @@ export function AdminDashboard() {
               </p>
             </div>
 
+            {isLoading ? (
+              <div className="grid min-h-72 place-items-center px-4 py-10 text-center text-sm font-medium text-neutral-500">
+                Cargando productos...
+              </div>
+            ) : products.length === 0 ? (
+              <div className="grid min-h-72 place-items-center px-4 py-10 text-center">
+                <div className="max-w-72">
+                  <p className="text-sm font-bold text-neutral-950">
+                    Todavia no hay productos
+                  </p>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    Crea el primer producto para mostrarlo en el catalogo.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full border-collapse text-left">
                 <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
@@ -239,6 +368,8 @@ export function AdminDashboard() {
                 </article>
               ))}
             </div>
+              </>
+            )}
           </section>
 
           <aside
@@ -261,6 +392,7 @@ export function AdminDashboard() {
                 <ProductForm
                   categories={categories}
                   initialProduct={editingProduct}
+                  isSaving={isSaving}
                   onCancel={closeForm}
                   onSave={handleSaveProduct}
                 />
@@ -293,6 +425,9 @@ function ProductThumb({ product }: { product: Product }) {
         alt={product.name}
         fill
         sizes="56px"
+        unoptimized={
+          product.image.startsWith("http") || product.image.endsWith(".svg")
+        }
         className="object-cover"
       />
     </div>

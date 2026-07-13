@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import type { ProductSaveInput } from "@/lib/productsApi";
 import type { Product } from "@/types/product";
 
 export type ProductFormData = {
@@ -17,17 +24,10 @@ export type ProductFormData = {
 type ProductFormProps = {
   categories: string[];
   initialProduct?: Product | null;
+  isSaving?: boolean;
   onCancel: () => void;
-  onSave: (product: Product) => void;
+  onSave: (product: ProductSaveInput) => Promise<void> | void;
 };
-
-function createSlug(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function getInitialFormData(product?: Product | null): ProductFormData {
   return {
@@ -44,6 +44,7 @@ function getInitialFormData(product?: Product | null): ProductFormData {
 export function ProductForm({
   categories,
   initialProduct,
+  isSaving = false,
   onCancel,
   onSave,
 }: ProductFormProps) {
@@ -88,34 +89,17 @@ export function ProductForm({
     const normalizedPrice = Number(formData.price);
     if (!normalizedPrice || normalizedPrice <= 0) return;
 
-    // Supabase storage hook point:
-    // if (formData.imageFile) {
-    //   const filePath = `productos/${crypto.randomUUID()}-${formData.imageFile.name}`;
-    //   const { data: uploadData, error: uploadError } = await supabase.storage
-    //     .from("productos")
-    //     .upload(filePath, formData.imageFile);
-    //   if (uploadError) throw uploadError;
-    //   imageUrl = supabase.storage.from("productos").getPublicUrl(filePath).data.publicUrl;
-    // }
-
-    const productPayload: Product = {
-      id: initialProduct?.id ?? createSlug(formData.name),
+    const productPayload: ProductSaveInput = {
       name: formData.name.trim(),
       shortDescription: formData.shortDescription.trim(),
       price: normalizedPrice,
       category: formData.category,
       inStock: formData.inStock,
-      image: previewUrl || "/images/products/placeholder.jpg",
-      options: initialProduct?.options,
+      imageFile: formData.imageFile,
+      imagePreview: formData.imagePreview,
     };
 
-    // Supabase database hook point:
-    // For create:
-    // await supabase.from("productos").insert(productPayload);
-    // For edit:
-    // await supabase.from("productos").update(productPayload).eq("id", initialProduct.id);
-
-    onSave(productPayload);
+    await onSave(productPayload);
   }
 
   return (
@@ -198,7 +182,9 @@ export function ProductForm({
                 src={previewUrl}
                 alt="Vista previa del producto"
                 fill
-                unoptimized={previewUrl.startsWith("blob:")}
+                unoptimized={
+                  previewUrl.startsWith("blob:") || previewUrl.startsWith("http")
+                }
                 className="object-cover"
               />
             ) : (
@@ -249,15 +235,21 @@ export function ProductForm({
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSaving}
           className="h-11 rounded-md border border-neutral-300 px-4 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50"
         >
           Cancelar
         </button>
         <button
           type="submit"
-          className="h-11 rounded-md bg-sky-700 px-5 text-sm font-bold text-white transition hover:bg-sky-800"
+          disabled={isSaving}
+          className="h-11 rounded-md bg-sky-700 px-5 text-sm font-bold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-neutral-300"
         >
-          {initialProduct ? "Guardar cambios" : "Crear producto"}
+          {isSaving
+            ? "Guardando..."
+            : initialProduct
+              ? "Guardar cambios"
+              : "Crear producto"}
         </button>
       </div>
     </form>

@@ -41,6 +41,9 @@ export function ProductCard({ product, whatsappPhone }: ProductCardProps) {
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          unoptimized={
+            product.image.startsWith("http") || product.image.endsWith(".svg")
+          }
           className="object-cover transition duration-300 group-hover:scale-105"
         />
 
