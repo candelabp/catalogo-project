@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --catalog-bg: #fafafa;
+  --catalog-surface: #ffffff;
+  --catalog-surface-muted: #f5f5f5;
+  --catalog-border: #e5e5e5;
+  --catalog-text: #0a0a0a;
+  --catalog-muted: #737373;
+  --catalog-primary: #0a0a0a;
+  --catalog-primary-hover: #262626;
+  --catalog-success: #059669;
+  --catalog-success-hover: #047857;
+}
+
+body {
+  background: var(--catalog-bg);
+  color: var(--catalog-text);
+}

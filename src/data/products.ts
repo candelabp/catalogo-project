@@ -1,0 +1,68 @@
+import type { Product } from "@/types/product";
+
+export const products: Product[] = [
+  {
+    id: "remera-basica-algodon",
+    name: "Remera basica algodon",
+    shortDescription: "Corte regular, suave al tacto y facil de combinar.",
+    price: 12900,
+    image: "/images/products/remera-basica.jpg",
+    category: "Indumentaria",
+    inStock: true,
+    options: [
+      { name: "Talle", values: ["S", "M", "L", "XL"] },
+      { name: "Color", values: ["Blanco", "Negro", "Arena"] },
+    ],
+  },
+  {
+    id: "buzo-frisa-premium",
+    name: "Buzo frisa premium",
+    shortDescription: "Abrigado, con capucha y bolsillo canguro.",
+    price: 34900,
+    image: "/images/products/buzo-frisa.jpg",
+    category: "Indumentaria",
+    inStock: true,
+    options: [
+      { name: "Talle", values: ["M", "L", "XL"] },
+      { name: "Color", values: ["Gris", "Negro"] },
+    ],
+  },
+  {
+    id: "mate-ceramica-artesanal",
+    name: "Mate ceramica artesanal",
+    shortDescription: "Interior esmaltado, incluye bombilla de acero.",
+    price: 9800,
+    image: "/images/products/mate-ceramica.jpg",
+    category: "Bazar",
+    inStock: false,
+    options: [{ name: "Color", values: ["Verde oliva", "Terracota"] }],
+  },
+  {
+    id: "vela-soja-vainilla",
+    name: "Vela de soja vainilla",
+    shortDescription: "Aroma calido en vaso reutilizable de vidrio.",
+    price: 7200,
+    image: "/images/products/vela-soja.jpg",
+    category: "Deco",
+    inStock: true,
+  },
+  {
+    id: "cuaderno-tapa-dura",
+    name: "Cuaderno tapa dura",
+    shortDescription: "Hojas lisas, elastico y bolsillo interno.",
+    price: 5900,
+    image: "/images/products/cuaderno.jpg",
+    category: "Papeleria",
+    inStock: true,
+    options: [{ name: "Color", values: ["Azul", "Rosa", "Negro"] }],
+  },
+  {
+    id: "set-tazas-cafe",
+    name: "Set x2 tazas cafe",
+    shortDescription: "Ceramica esmaltada, ideal para espresso o cortado.",
+    price: 15400,
+    image: "/images/products/tazas-cafe.jpg",
+    category: "Bazar",
+    inStock: true,
+  },
+];
